@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hina | DevOps Command Center KSA</title>
+    <!-- Tailwind CSS for Modern & Beautiful UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="h-4 w-4 bg-green-500 rounded-full animate-pulse"></div>
+            <span class="text-xl font-bold tracking-wider text-green-400">HINA OMNI-CLOUD SRE</span>
+        </div>
+        <div class="text-sm bg-gray-700 px-3 py-1 rounded text-gray-300 font-mono">
+            Market Target: Saudi Arabia Vision 2030 🇸🇦
+        </div>
+    </nav>
+
+    <!-- Main Dashboard Body -->
+    <main class="p-6 max-w-7xl mx-auto space-y-6">
+        
+        <!-- Header Section -->
+        <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-6 rounded-lg shadow-lg border border-indigo-500/30">
+            <h1 class="text-2xl font-bold text-white">Enterprise GitOps Control Plane</h1>
+            <p class="text-gray-300 mt-1">Multi-environment automated validation engine for live cloud infrastructure.</p>
+        </div>
+
+        <!-- Metrics Grid (Cards) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <!-- Card 1: Cluster Status -->
+            <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-md">
+                <p class="text-sm text-gray-400 uppercase tracking-wider">AKS Cluster Status</p>
+                <h3 id="cluster-health" class="text-2xl font-bold text-green-400 mt-2">Loading...</h3>
+                <span id="k8s-version" class="text-xs font-mono text-gray-500">--</span>
+            </div>
+
+            <!-- Card 2: CPU / Resource -->
+            <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-md">
+                <p class="text-sm text-gray-400 uppercase tracking-wider">Simulated CPU Load</p>
+                <h3 id="cpu-usage" class="text-2xl font-bold text-blue-400 mt-2">Loading...</h3>
+                <span class="text-xs font-mono text-gray-500">Azure Agent Pool</span>
+            </div>
+
+            <!-- Card 3: GitOps Status -->
+            <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-md">
+                <p class="text-sm text-gray-400 uppercase tracking-wider">ArgoCD Sync State</p>
+                <h3 id="gitops-status" class="text-2xl font-bold text-teal-400 mt-2">Loading...</h3>
+                <span id="last-deploy" class="text-xs text-gray-400 truncate block mt-1">--</span>
+            </div>
+
+            <!-- Card 4: DevSecOps Gate -->
+            <div class="bg-gray-800 p-5 rounded-lg border border-gray-700 shadow-md">
+                <p class="text-sm text-gray-400 uppercase tracking-wider">SonarQube / Trivy Scan</p>
+                <h3 id="security-scan" class="text-lg font-bold text-yellow-400 mt-3">Loading...</h3>
+                <span class="text-xs font-mono text-green-500">✔ Compliance Passed</span>
+            </div>
+
+        </div>
+
+        <!-- Detailed Status Table Simulation -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700 p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-200">Active Pipeline Deployments</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-400">
+                    <thead class="bg-gray-700/50 text-gray-300 uppercase text-xs tracking-wider">
+                        <tr>
+                            <th class="p-3">Pipeline ID</th>
+                            <th class="p-3">Target Region</th>
+                            <th class="p-3">Branch</th>
+                            <th class="p-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700">
+                        <tr class="hover:bg-gray-700/30">
+                            <td class="p-3 font-mono text-indigo-400">hina-prod-pipeline #1024</td>
+                            <td id="saudi-region" class="p-3">Loading...</td>
+                            <td class="p-3"><span class="bg-blue-900 text-blue-200 px-2 py-0.5 rounded text-xs font-mono">main</span></td>
+                            <td class="p-3"><span class="bg-green-900 text-green-200 px-2 py-0.5 rounded text-xs">Success</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- JavaScript to Fetch Live Data from Flask Backend dynamically -->
+    <script>
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                const data = await response.json();
+                
+                document.getElementById('cluster-health').innerText = data.cluster_health;
+                document.getElementById('k8s-version').innerText = data.kubernetes_version;
+                document.getElementById('cpu-usage').innerText = data.cpu_usage;
+                document.getElementById('gitops-status').innerText = data.gitops_status;
+                document.getElementById('last-deploy').innerText = data.last_deployment;
+                document.getElementById('security-scan').innerText = data.security_scan;
+                document.getElementById('saudi-region').innerText = data.saudi_region;
+            } catch (error) {
+                console.error("Error fetching metrics:", error);
+            }
+        }
+
+        // Fetch metrics immediately on load, then update every 3 seconds
+        fetchMetrics();
+        setInterval(fetchMetrics, 3000);
+    </script>
+</body>
+</html>
