@@ -10,8 +10,27 @@ variables:
   imageTag: '$(Build.BuildId)' 
 
 stages:
+# 🛡️ NEW DEVSECOPS STAGE 🛡️
+- stage: SecurityScan
+  displayName: 'DevSecOps: Vulnerability Scan'
+  jobs:
+  - job: TrivyScan
+    displayName: 'Scan Code & Dependencies'
+    steps:
+    - bash: |
+        echo "⬇️ Downloading Trivy Scanner..."
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+        
+        echo "🔍 Running Trivy Security Scan on Repository..."
+        # Note: Abhi humne --exit-code 0 rakha hai taake pipeline fail na ho (Audit Mode).
+        # Strict enterprise env mein isay --exit-code 1 kar dete hain taake critical issues par build ruk jaye.
+        trivy fs --severity HIGH,CRITICAL --exit-code 0 --no-progress .
+      displayName: 'Run Aqua Security Trivy Scan'
+
+# 🏗️ EXISTING BUILD STAGE (Now depends on SecurityScan)
 - stage: BuildAndPush
   displayName: 'Build and Push Stage'
+  dependsOn: SecurityScan
   jobs:
   - job: Build
     displayName: 'Docker Build & Registry Push'
@@ -27,6 +46,7 @@ stages:
           $(imageTag)
           latest
 
+# 🔄 EXISTING GITOPS STAGE
 - stage: UpdateManifests
   displayName: 'Update GitOps Manifests'
   dependsOn: BuildAndPush
@@ -35,25 +55,17 @@ stages:
     displayName: 'Git Push New Image Tag'
     steps:
     - bash: |
-        # 1. Git config set up karo
         git config --global user.email "hinanaseer13@gmail.com"
         git config --global user.name "Hina Naseer"
         
-        # 2. Variable ke zariye securely clone karo 
-        # (Yahan $MY_SECURE_TOKEN us environment variable ko call kar raha hai jo hum ne niche define kiya hai)
         git clone https://$(githubToken)@github.com/hinanaseer/hina-gitops-manifests.git
-        
-        # 3. Cloned folder ke andar jao
         cd hina-gitops-manifests
         
-        # 4. deployment.yaml ke andar image tag ko naye BuildId se update karo
         sed -i "s|hinaksaacr.azurecr.io/hina-secure-app:.*|hinaksaacr.azurecr.io/hina-secure-app:$(imageTag)|g" deployment.yaml
         
-        # 5. Changes ko GitHub par push karo
         git add deployment.yaml
         git commit -m "automation: update deployment image tag to $(imageTag) [skip ci]"
         git push origin main
       displayName: 'Sed Update and Push to Manifest Repo'
       env:
-        # Aap ke Azure DevOps GUI variable ko yahan script ke sath link kar rahe hain
         MY_SECURE_TOKEN: $(GITHUB_PAT)
