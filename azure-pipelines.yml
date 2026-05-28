@@ -1,14 +1,13 @@
 trigger:
-  - main # Jaise hi main branch par push hoga, pipeline khud chal paregi
+  - main
 
 pool:
-  vmImage: 'ubuntu-latest' # Build karne ke liye Microsoft ka standard agent runner
+  vmImage: 'ubuntu-latest'
 
 variables:
-  # Tumhare banaye huay Service Connection aur Registry ka naam
   acrServiceConnection: 'hina-acr-connection'
   repositoryName: 'hina-secure-app'
-  imageTag: 'v1' # Initial version tag
+  imageTag: '$(Build.BuildId)' 
 
 stages:
 - stage: BuildAndPush
@@ -17,8 +16,6 @@ stages:
   - job: Build
     displayName: 'Docker Build & Registry Push'
     steps:
-    
-    # Task: Docker Image ko Build aur ACR par Push karna
     - task: Docker@2
       displayName: 'Build and Push to Azure Container Registry'
       inputs:
@@ -29,3 +26,34 @@ stages:
         tags: |
           $(imageTag)
           latest
+
+- stage: UpdateManifests
+  displayName: 'Update GitOps Manifests'
+  dependsOn: BuildAndPush
+  jobs:
+  - job: UpdateGit
+    displayName: 'Git Push New Image Tag'
+    steps:
+    - bash: |
+        # 1. Git config set up karo
+        git config --global user.email "hinanaseer13@gmail.com"
+        git config --global user.name "Hina Naseer"
+        
+        # 2. Variable ke zariye securely clone karo 
+        # (Yahan $MY_SECURE_TOKEN us environment variable ko call kar raha hai jo hum ne niche define kiya hai)
+        git clone https://$(githubToken)@github.com/hinanaseer/hina-gitops-manifests.git
+        
+        # 3. Cloned folder ke andar jao
+        cd hina-gitops-manifests
+        
+        # 4. deployment.yaml ke andar image tag ko naye BuildId se update karo
+        sed -i "s|hinaksaacr.azurecr.io/hina-secure-app:.*|hinaksaacr.azurecr.io/hina-secure-app:$(imageTag)|g" deployment.yaml
+        
+        # 5. Changes ko GitHub par push karo
+        git add deployment.yaml
+        git commit -m "automation: update deployment image tag to $(imageTag) [skip ci]"
+        git push origin main
+      displayName: 'Sed Update and Push to Manifest Repo'
+      env:
+        # Aap ke Azure DevOps GUI variable ko yahan script ke sath link kar rahe hain
+        MY_SECURE_TOKEN: $(GITHUB_PAT)
